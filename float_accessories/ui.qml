@@ -112,6 +112,7 @@ Item {
     property int bmsBleSavedType: 0
     property bool bmsBleScanning: false
     property string bmsBleDiag: ""
+    property string bmsBleCrash: ""
 
     ListModel {
         id: bmsBleScanModel
@@ -893,7 +894,8 @@ Item {
                                 visible: bmsBleEnabled.checked && bmsBleDiag.length > 0
                                 color: "grey"
                                 font.pointSize: 9
-                                text: "BLE BMS diag: " + bmsBleDiag
+                                text: "BLE BMS diag: " + bmsBleDiag + (bmsBleCrash.length > 0 ? "\nlast crash: " + bmsBleCrash.split("|").join(" ") : "")
+                                wrapMode: Text.WordWrap
                             }
                             Text {
                                 id: humidityStatus
@@ -3113,6 +3115,10 @@ Item {
                     bmsBleSavedType = Number(tokens[13])
                     bmsBleEnabled.checked = Number(tokens[14]) === 1
                     bmsBleDiag = tokens.length >= 19 ? ("rst " + tokens[15] + "  last stage " + tokens[16] + "  stage " + tokens[17] + "  heap " + tokens[18]) : ""
+                    if (tokens.length >= 20 && tokens[19] !== "-" && tokens[19] !== bmsBleCrash) {
+                        bmsBleCrash = tokens[19]
+                        VescIf.emitStatusMessage("BLE BMS firmware crash (rst " + tokens[15] + ", stage " + tokens[16] + "): " + tokens[19].split("|").join(" "), false)
+                    }
                 }
             } else if (str.startsWith("msg")) {
                 var msg = str.substring(4)

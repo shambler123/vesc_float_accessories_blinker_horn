@@ -127,12 +127,28 @@
             (send-data "bms-ble 0"))
 })
 
-; "reset-reason stage-before-reset stage free-heap" from newer firmware, "- - - -" otherwise
+; "reset-reason stage-before-reset stage free-heap crash" from newer firmware, "- - - - -" otherwise.
+; crash is "-" or "reason|description|task|pc|ra|mcause|mtval" with spaces replaced by _
 (defun bms-ble-stats-str () {
         (var r (trap (bms-ble-stats)))
         (if (eq (first r) 'exit-ok) {
             (var s (second r))
-            (str-merge (str-from-n (ix s 0)) " " (str-from-n (ix s 1)) " " (str-from-n (ix s 2)) " " (str-from-n (ix s 3)))
-        } "- - - -")
+            (str-merge (str-from-n (ix s 0)) " " (str-from-n (ix s 1)) " " (str-from-n (ix s 2)) " " (str-from-n (ix s 3)) " " (bms-ble-crash-str))
+        } "- - - - -")
+})
+
+(defun bms-ble-crash-str () {
+        (var r (trap (crash-info)))
+        (if (and (eq (first r) 'exit-ok) (second r)) {
+            (var c (second r))
+            (str-merge
+                (str-replace (ix c 0) " " "_") "|"
+                (str-replace (ix c 1) " " "_") "|"
+                (str-replace (ix c 2) " " "_") "|"
+                (str-from-n (ix c 3) "0x%08X") "|"
+                (str-from-n (ix c 4) "0x%08X") "|"
+                (str-from-n (ix c 5) "0x%08X") "|"
+                (str-from-n (ix c 6) "0x%08X"))
+        } "-")
 })
 @const-end
