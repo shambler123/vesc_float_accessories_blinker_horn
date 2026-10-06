@@ -111,6 +111,7 @@ Item {
     property string bmsBleMac: "-"
     property int bmsBleSavedType: 0
     property bool bmsBleScanning: false
+    property string bmsBleDiag: ""
 
     ListModel {
         id: bmsBleScanModel
@@ -886,6 +887,13 @@ Item {
                                           "BLE BMS (" + bmsBleType + "): " + bmsBleVoltage.toFixed(2) + "V  " + bmsBleCurrent.toFixed(2) + "A  " + bmsBleSoc + "%  " +
                                           bmsBleCells + "s  " + bmsBleCellMin.toFixed(3) + "-" + bmsBleCellMax.toFixed(3) + "V  SOH " + bmsBleSoh + "%" :
                                           "BLE BMS: " + bmsBleState + (bmsBleMac !== "-" ? " (" + bmsBleMac + ")" : " (no BMS saved)"))
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                visible: bmsBleEnabled.checked && bmsBleDiag.length > 0
+                                color: "grey"
+                                font.pointSize: 9
+                                text: "BLE BMS diag: " + bmsBleDiag
                             }
                             Text {
                                 id: humidityStatus
@@ -3104,6 +3112,7 @@ Item {
                     bmsBleMac = tokens[12]
                     bmsBleSavedType = Number(tokens[13])
                     bmsBleEnabled.checked = Number(tokens[14]) === 1
+                    bmsBleDiag = tokens.length >= 19 ? ("rst " + tokens[15] + "  last stage " + tokens[16] + "  stage " + tokens[17] + "  heap " + tokens[18]) : ""
                 }
             } else if (str.startsWith("msg")) {
                 var msg = str.substring(4)

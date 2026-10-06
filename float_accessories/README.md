@@ -43,7 +43,7 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
 
 <H3>BUILD INFO</H3>
 
-Version 3.5.27
+Version 3.5.28
 
 <ul>
   <li>Amber blinker (STVO §99: 1.5 Hz, 50% duty, #FF9900) — left/right overlay on front and rear strips</li>

@@ -122,7 +122,17 @@
                 (str-from-n (* 100 (bms-ble-get 'soh)) "%.0f ")
                 (let ((m (bms-ble-saved-mac))) (if (> (str-len m) 0) m "-")) " "
                 (str-from-n (get-config 'bms-ble-type) "%d ")
-                (str-from-n (get-config 'bms-ble-enabled) "%d")))
+                (str-from-n (get-config 'bms-ble-enabled) "%d ")
+                (bms-ble-stats-str)))
             (send-data "bms-ble 0"))
+})
+
+; "reset-reason stage-before-reset stage free-heap" from newer firmware, "- - - -" otherwise
+(defun bms-ble-stats-str () {
+        (var r (trap (bms-ble-stats)))
+        (if (eq (first r) 'exit-ok) {
+            (var s (second r))
+            (str-merge (str-from-n (ix s 0)) " " (str-from-n (ix s 1)) " " (str-from-n (ix s 2)) " " (str-from-n (ix s 3)))
+        } "- - - -")
 })
 @const-end
