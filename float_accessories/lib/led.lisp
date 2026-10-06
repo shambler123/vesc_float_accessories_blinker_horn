@@ -176,18 +176,22 @@
         (setq led-footpad-buffer (rgbled-buffer led-footpad-num led-footpad-type))
     })
 
-    (if (and (>= led-front-pin 0) (= led-status-pin led-front-pin) (= led-front-pin led-rear-pin)) {
+    ; The buffer layout must match the pin cases in led-flush-buffers exactly.
+    ; A strip only takes part in a shared pin when its strip type is enabled,
+    ; otherwise a disabled status strip on the rear pin (default pin 7) would
+    ; leave the rear strip without a buffer.
+    (if (and (>= led-status-strip-type 0) (>= led-front-strip-type 0) (>= led-rear-strip-type 0) (>= led-front-pin 0) (= led-status-pin led-front-pin) (= led-front-pin led-rear-pin)) {
         (var total-leds (+ led-status-num led-front-num front-highbeam-leds led-rear-num rear-highbeam-leds))
         (setq led-combined-buffer (rgbled-buffer total-leds led-status-type))
         (setq combined-pins t)
     }{
         ;LED front/back are on same pin
-        (if (and (>= led-front-pin 0) (= led-front-pin led-rear-pin)) {
+        (if (and (> led-front-strip-type 0) (> led-rear-strip-type 0) (>= led-front-pin 0) (= led-front-pin led-rear-pin)) {
             (var total-leds (+ led-front-num front-highbeam-leds led-rear-num rear-highbeam-leds))
             (setq led-combined-buffer (rgbled-buffer total-leds led-front-type))
             (setq combined-pins t)
         }{
-            (if (and (>= led-status-pin 0) (= led-status-pin led-rear-pin)) {
+            (if (and (> led-status-strip-type 0) (> led-rear-strip-type 0) (>= led-status-pin 0) (= led-status-pin led-rear-pin)) {
                 (var total-leds (+ led-status-num led-rear-num rear-highbeam-leds))
                 (setq led-combined-buffer (rgbled-buffer total-leds led-rear-type))
                 (setq combined-pins t)
