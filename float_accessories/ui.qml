@@ -417,8 +417,8 @@ Item {
         id: mainLayout
         anchors.fill: parent
         spacing: 10
-        property string primaryTabLabel: ledEnabled.checked || bmsEnabled.checked || logEnabled.checked ? qsTr("Control") : qsTr("Status")
-        property int enabledFeatureCount: ledEnabled.checked + pubmoteEnabled.checked + bmsEnabled.checked + logEnabled.checked
+        property string primaryTabLabel: ledEnabled.checked || bmsEnabled.checked || bmsBleEnabled.checked || logEnabled.checked ? qsTr("Control") : qsTr("Status")
+        property int enabledFeatureCount: ledEnabled.checked + pubmoteEnabled.checked + (bmsEnabled.checked || bmsBleEnabled.checked) + logEnabled.checked
 
         Text {
             Layout.alignment: Qt.AlignHCenter
@@ -474,6 +474,11 @@ Item {
                 function onCheckedChanged() { updateEnabledIndices() }
             }
 
+            Connections {
+                target: bmsBleEnabled
+                function onCheckedChanged() { updateEnabledIndices() }
+            }
+
             TabButton {
                 text: qsTr("LED")
                 enabled: ledEnabled.checked
@@ -490,9 +495,9 @@ Item {
 
             TabButton {
                 text: qsTr("BMS")
-                enabled: bmsEnabled.checked
-                visible: bmsEnabled.checked
-                width: bmsEnabled.checked ? implicitWidth : 0
+                enabled: bmsEnabled.checked || bmsBleEnabled.checked
+                visible: bmsEnabled.checked || bmsBleEnabled.checked
+                width: (bmsEnabled.checked || bmsBleEnabled.checked) ? implicitWidth : 0
             }
             TabButton {
                 text: qsTr("Logging")
@@ -873,7 +878,7 @@ Item {
                             Text {
                                 id: bmsBleStatus
                                 Layout.fillWidth: true
-                                visible: bmsEnabled.checked && bmsBleEnabled.checked
+                                visible: bmsBleEnabled.checked
                                 wrapMode: Text.WordWrap
                                 color: !bmsBleAvailable ? "grey" : ((bmsBleState === "connected" && !statusTimeout) ? "green" : "orange")
                                 text: !bmsBleAvailable ? "BLE BMS: firmware without BLE BMS support" :
@@ -1963,7 +1968,7 @@ Item {
                     ColumnLayout {
                         width: stackLayout.width
                         spacing: 10
-                        visible: bmsEnabled.checked && tabBar2.currentIndex === 2
+                        visible: (bmsEnabled.checked || bmsBleEnabled.checked) && tabBar2.currentIndex === 2
 
                         GroupBox {
                             title: "Bluetooth BMS (JBD / Daly / LiPower / LiTech)"
@@ -1983,14 +1988,11 @@ Item {
                                           "This firmware has no bms-ble extensions. Flash the vesc_express_ble firmware to use a Bluetooth BMS."
                                 }
 
-                                CheckBox {
-                                    id: bmsBleEnabled
-                                    text: "Enable Bluetooth BMS"
-                                    checked: false
-                                    enabled: bmsBleAvailable
-                                    onToggled: {
-                                        sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-set-enabled " + (checked ? 1 : 0) + ")")
-                                    }
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: Utility.getAppHexColor("lightText")
+                                    text: "Independent of the OW BMS bridge above (\"BMS Enabled\"), no reboot needed. Pick a device below, the choice is saved immediately."
                                 }
 
                                 RowLayout {
@@ -2072,7 +2074,9 @@ Item {
                         }
 
                         GroupBox {
+                            title: "OW BMS bridge (UART)"
                             Layout.fillWidth: true
+                            visible: bmsEnabled.checked
                             ColumnLayout {
                                 anchors.fill: parent
                                 spacing: 10
@@ -2442,6 +2446,16 @@ Item {
                                 text: "BMS Enabled (requires reboot)"
                                 checked: false
                                 enabled: true
+                            }
+
+                            CheckBox {
+                                id: bmsBleEnabled
+                                text: "Bluetooth BMS Enabled (applies immediately)"
+                                checked: false
+                                enabled: bmsBleAvailable
+                                onToggled: {
+                                    sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-set-enabled " + (checked ? 1 : 0) + ")")
+                                }
                             }
 
                             CheckBox {
@@ -2915,7 +2929,7 @@ Item {
         const newIndices = []
         if (ledEnabled.checked) newIndices.push(0)
         if (pubmoteEnabled.checked) newIndices.push(1)
-        if (bmsEnabled.checked) newIndices.push(2)
+        if (bmsEnabled.checked || bmsBleEnabled.checked) newIndices.push(2)
         newIndices.push(4)  // Additional Settings always available
         enabledIndices = newIndices
     }
