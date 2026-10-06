@@ -23,7 +23,7 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
   <li>Bluetooth BMS has its own enable switch in Settings, independent of the OW BMS bridge and without reboot. Values are also forwarded to the VESC over CAN.</li>
   <li>Fix: LED loop crashed (and took the whole script down) when the rear strip shared its pin with a disabled status strip, e.g. front 6 / rear 7 with the default status pin 7.</li>
   <li>Fix: settings changed together with an LED/BMS/Pubmote enable toggle were lost by the reboot. LED pins are now stored even while LEDs are disabled.</li>
-  <li>Bluetooth BMS support (JBD, Daly, LiPower, LiTech) with scan, select and save in the BMS tab. Needs the vesc_express_ble firmware.</li>
+  <li>Bluetooth BMS support (JBD, Daly, JK, ANT, LiPower, LiTech) with scan, select and save in the BMS tab. Needs the vesc_express_ble firmware.</li>
   <li>Memory optimization</li>
   <li>Setting save fix</li>
   <li>Motor Config fix</li>
@@ -43,7 +43,7 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
 
 <H3>BUILD INFO</H3>
 
-Version 3.5.31
+Version 3.5.32
 
 <ul>
   <li>Amber blinker (STVO §99: 1.5 Hz, 50% duty, #FF9900) — left/right overlay on front and rear strips</li>
