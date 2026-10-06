@@ -148,7 +148,10 @@
                 (str-from-n (ix c 3) "0x%08X") "|"
                 (str-from-n (ix c 4) "0x%08X") "|"
                 (str-from-n (ix c 5) "0x%08X") "|"
-                (str-from-n (ix c 6) "0x%08X"))
+                (str-from-n (ix c 6) "0x%08X")
+                (if (> (length c) 9)
+                    (str-merge "|" (str-replace (ix c 8) " " "_") "|up" (str-from-n (ix c 9)) "s")
+                    ""))
         } "-")
 })
 @const-end
