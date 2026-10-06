@@ -96,6 +96,33 @@ Item {
     property int pubmoteClickCount: 0
     property int pubmoteHornCount: 0
 
+    // Bluetooth BMS (bms-ble firmware extensions)
+    property bool bmsBleAvailable: false
+    property string bmsBleState: "disabled"
+    property string bmsBleType: "auto"
+    property real bmsBleVoltage: 0
+    property real bmsBleCurrent: 0
+    property int bmsBleSoc: 0
+    property int bmsBleCells: 0
+    property real bmsBleCellMin: 0
+    property real bmsBleCellMax: 0
+    property int bmsBleAge: -1
+    property int bmsBleSoh: 100
+    property string bmsBleMac: "-"
+    property int bmsBleSavedType: 0
+    property bool bmsBleScanning: false
+
+    ListModel {
+        id: bmsBleScanModel
+    }
+
+    Timer {
+        id: bmsBleScanTimeout
+        interval: 15000
+        repeat: false
+        onTriggered: bmsBleScanning = false
+    }
+
     Component.onCompleted: {
         if (VescIf.getLastFwRxParams().hwTypeStr() !== "Custom Module") {
             VescIf.emitMessageDialog("Float Accessories", "Warning: It doesn't look like this is installed on a VESC Express.", false, false)
@@ -842,6 +869,18 @@ Item {
                                 color: (!statusTimeout && bmsHum > 0) ? "green" : "grey"
                                 text: "BMS Temp: " + ((!statusTimeout && bmsHum > 0) ? Math.floor((bmsHumTemp * 1.8 + 32) * 100)/100 +"F " + bmsHumTemp + "C" : "Unknown")
                                 visible: bmsEnabled.checked
+                            }
+                            Text {
+                                id: bmsBleStatus
+                                Layout.fillWidth: true
+                                visible: bmsEnabled.checked && bmsBleEnabled.checked
+                                wrapMode: Text.WordWrap
+                                color: !bmsBleAvailable ? "grey" : ((bmsBleState === "connected" && !statusTimeout) ? "green" : "orange")
+                                text: !bmsBleAvailable ? "BLE BMS: firmware without BLE BMS support" :
+                                      (bmsBleState === "connected" ?
+                                          "BLE BMS (" + bmsBleType + "): " + bmsBleVoltage.toFixed(2) + "V  " + bmsBleCurrent.toFixed(2) + "A  " + bmsBleSoc + "%  " +
+                                          bmsBleCells + "s  " + bmsBleCellMin.toFixed(3) + "-" + bmsBleCellMax.toFixed(3) + "V  SOH " + bmsBleSoh + "%" :
+                                          "BLE BMS: " + bmsBleState + (bmsBleMac !== "-" ? " (" + bmsBleMac + ")" : " (no BMS saved)"))
                             }
                             Text {
                                 id: humidityStatus
@@ -1925,6 +1964,113 @@ Item {
                         width: stackLayout.width
                         spacing: 10
                         visible: bmsEnabled.checked && tabBar2.currentIndex === 2
+
+                        GroupBox {
+                            title: "Bluetooth BMS (JBD / Daly / LiPower / LiTech)"
+                            Layout.fillWidth: true
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 10
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: bmsBleAvailable ? Utility.getAppHexColor("lightText") : "orange"
+                                    text: bmsBleAvailable ?
+                                          "The VESC Express connects to the BMS over BLE while VESC Tool stays connected. Saved BMS: " +
+                                          (bmsBleMac !== "-" ? bmsBleMac + " (" + ["auto", "jbd", "daly", "lipower", "litech"][bmsBleSavedType] + ")" : "none") :
+                                          "This firmware has no bms-ble extensions. Flash the vesc_express_ble firmware to use a Bluetooth BMS."
+                                }
+
+                                CheckBox {
+                                    id: bmsBleEnabled
+                                    text: "Enable Bluetooth BMS"
+                                    checked: false
+                                    enabled: bmsBleAvailable
+                                    onToggled: {
+                                        sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-set-enabled " + (checked ? 1 : 0) + ")")
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Button {
+                                        text: bmsBleScanning ? "Scanning..." : "Scan (6 s)"
+                                        enabled: bmsBleAvailable && !bmsBleScanning
+                                        onClicked: {
+                                            bmsBleScanModel.clear()
+                                            bmsBleScanning = true
+                                            bmsBleScanTimeout.restart()
+                                            sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-do-scan 6)")
+                                        }
+                                    }
+
+                                    BusyIndicator {
+                                        running: bmsBleScanning
+                                        visible: bmsBleScanning
+                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: 30
+                                    }
+
+                                    Button {
+                                        text: "Forget"
+                                        enabled: bmsBleAvailable && bmsBleMac !== "-"
+                                        onClicked: {
+                                            sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-forget)")
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    color: Utility.getAppHexColor("lightText")
+                                    text: "Protocol (auto = detect from the BMS)"
+                                }
+
+                                ComboBox {
+                                    id: bmsBleTypeOverride
+                                    Layout.fillWidth: true
+                                    model: ["auto", "jbd", "daly", "lipower", "litech"]
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    visible: !bmsBleScanning && bmsBleScanModel.count === 0
+                                    color: Utility.getAppHexColor("lightText")
+                                    text: "No devices listed. Press Scan while the BMS is powered and no phone app is connected to it."
+                                }
+
+                                Repeater {
+                                    model: bmsBleScanModel
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 10
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            wrapMode: Text.WordWrap
+                                            color: model.btype === "unknown" ? "grey" : Utility.getAppHexColor("lightText")
+                                            text: (model.name.length > 0 ? model.name : "(no name)") + "\n" + model.mac + "   " + model.rssi + " dBm   " + model.btype
+                                        }
+
+                                        Button {
+                                            text: "Use"
+                                            onClicked: {
+                                                var t = bmsBleTypeOverride.currentText
+                                                if (t === "auto" && model.btype !== "unknown") {
+                                                    t = model.btype
+                                                }
+                                                sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-select \"" + model.mac + "\" '" + t + ")")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         GroupBox {
                             Layout.fillWidth: true
                             ColumnLayout {
@@ -2908,10 +3054,43 @@ Item {
                 autoBlinkerEnabled.checked = Number(tokens[91])
                 autoBlinkerAngle.value = Number(tokens[92])
                 autoBlinkerInvert.checked = Number(tokens[93])
+                if (tokens.length > 97) {
+                    bmsBleEnabled.checked = Number(tokens[94]) === 1
+                    bmsBleSavedType = Number(tokens[97])
+                }
 
                 isPubmotePaired = (Number(tokens[46]) != -1);
                 pubmoteMacAddress.text = "MAC: " + (!isPubmotePaired ? "Not Paired" : macAddress.toUpperCase());
                 readConfig = true;
+            } else if (str.startsWith("bms-ble-scan")) {
+                bmsBleScanModel.clear()
+                var entries = str.substring(13).split("|")
+                for (var i = 0; i < entries.length; i++) {
+                    var f = entries[i].split(";")
+                    if (f.length >= 4) {
+                        bmsBleScanModel.append({name: f[0], mac: f[1], rssi: Number(f[2]), btype: f[3]})
+                    }
+                }
+                bmsBleScanning = false
+                bmsBleScanTimeout.stop()
+            } else if (str.startsWith("bms-ble ")) {
+                var tokens = str.split(" ")
+                bmsBleAvailable = Number(tokens[1]) === 1
+                if (bmsBleAvailable && tokens.length >= 15) {
+                    bmsBleState = tokens[2]
+                    bmsBleType = tokens[3]
+                    bmsBleVoltage = parseFloat(tokens[4])
+                    bmsBleCurrent = parseFloat(tokens[5])
+                    bmsBleSoc = Number(tokens[6])
+                    bmsBleCells = Number(tokens[7])
+                    bmsBleCellMin = parseFloat(tokens[8])
+                    bmsBleCellMax = parseFloat(tokens[9])
+                    bmsBleAge = Number(tokens[10])
+                    bmsBleSoh = Number(tokens[11])
+                    bmsBleMac = tokens[12]
+                    bmsBleSavedType = Number(tokens[13])
+                    bmsBleEnabled.checked = Number(tokens[14]) === 1
+                }
             } else if (str.startsWith("msg")) {
                 var msg = str.substring(4)
                 VescIf.emitMessageDialog("Float Accessories", msg, false, false)

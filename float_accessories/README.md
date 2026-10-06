@@ -20,6 +20,7 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
 <H2>RELEASE NOTES</H2>
 
 <ul>
+  <li>Bluetooth BMS support (JBD, Daly, LiPower, LiTech) with scan, select and save in the BMS tab. Needs the vesc_express_ble firmware.</li>
   <li>Memory optimization</li>
   <li>Setting save fix</li>
   <li>Motor Config fix</li>
@@ -39,7 +40,7 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
 
 <H3>BUILD INFO</H3>
 
-Version 3.5.23
+Version 3.5.24
 
 <ul>
   <li>Amber blinker (STVO §99: 1.5 Hz, 50% duty, #FF9900) — left/right overlay on front and rear strips</li>

@@ -1,6 +1,6 @@
 ; float-accessories.lisp
 ; Smart LED Control, Tilt Remote and stock OW BMS bridge for VESC Express
-; Version 3.5.23
+; Version 3.5.24
 ; 5/24/2025
 ; Copyright 2024 Syler Clayton <syler.clayton@gmail.com>
 ; Special Thanks: Benjamin Vedder, surfdado, NuRxG, Siwoz, lolwheel (OWIE), ThankTheMaker (rESCue), 4_fools & marcos (avaspark), auden_builds (pubmote)
@@ -22,6 +22,8 @@
 (read-eval-program led-patterns)
 (import "lib/bms.lisp" 'bms)
 (read-eval-program bms)
+(import "lib/bms_ble.lisp" 'bms-ble)
+(read-eval-program bms-ble)
 (import "lib/pubmote.lisp" 'pubmote)
 (read-eval-program pubmote)
 
@@ -84,6 +86,9 @@
     })
 
     (if (= (get-config 'humidity-enabled) 1) (setq humidity-context-id (spawn humidity-loop)))
+
+    ; Bluetooth BMS (needs the bms-ble firmware extensions, skipped otherwise)
+    (bms-ble-init)
 
     (if (= (get-config 'log-enabled) 1) (setq log-context-id (spawn 50 log-loop)))
 })

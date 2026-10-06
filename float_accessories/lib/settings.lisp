@@ -99,6 +99,10 @@
     (auto-blinker-enabled      . (90 b 0))
     (auto-blinker-angle        . (91 f 10.0))
     (auto-blinker-invert       . (92 b 0))
+    (bms-ble-enabled           . (93 b 0))
+    (bms-ble-mac-hi            . (94 i -1))
+    (bms-ble-mac-lo            . (95 i -1))
+    (bms-ble-type              . (96 i 0))
 ))
 (def runtime-vals)
 (setq runtime-vals (mklist (length eeprom-addrs) -1))
@@ -628,6 +632,7 @@
     (setq status-string (str-merge status-string (str-from-n (get-bms-val 'bms-temp-hum) "%.0f ")))
     (setq status-string (str-merge status-string (str-from-n (if log-running 1 0) "%d ")))
     (send-data status-string)
+    (bms-ble-status)
 
     (if (= (is-pubmote-connected) 1) {
         (send-data (str-merge "pubmote-info " (to-str pubmote-version-major) "." (to-str pubmote-version-minor) "." (to-str pubmote-version-patch)))
