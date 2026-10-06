@@ -3114,7 +3114,7 @@ Item {
                     bmsBleMac = tokens[12]
                     bmsBleSavedType = Number(tokens[13])
                     bmsBleEnabled.checked = Number(tokens[14]) === 1
-                    bmsBleDiag = tokens.length >= 19 ? ("rst " + tokens[15] + "  last stage " + tokens[16] + "  stage " + tokens[17] + "  heap " + tokens[18]) : ""
+                    bmsBleDiag = tokens.length >= 19 ? ("rst " + tokens[15] + "  last stage " + tokens[16] + "  stage " + tokens[17] + "  heap " + tokens[18] + (tokens.length >= 21 ? " (min " + tokens[20] + ")" : "")) : ""
                     if (tokens.length >= 20 && tokens[19] !== "-" && tokens[19] !== bmsBleCrash) {
                         bmsBleCrash = tokens[19]
                         VescIf.emitStatusMessage("BLE BMS firmware crash (rst " + tokens[15] + ", stage " + tokens[16] + "): " + tokens[19].split("|").join(" "), false)

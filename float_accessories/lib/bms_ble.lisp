@@ -133,8 +133,8 @@
         (var r (trap (bms-ble-stats)))
         (if (eq (first r) 'exit-ok) {
             (var s (second r))
-            (str-merge (str-from-n (ix s 0)) " " (str-from-n (ix s 1)) " " (str-from-n (ix s 2)) " " (str-from-n (ix s 3)) " " (bms-ble-crash-str))
-        } "- - - - -")
+            (str-merge (str-from-n (ix s 0)) " " (str-from-n (ix s 1)) " " (str-from-n (ix s 2)) " " (str-from-n (ix s 3)) " " (bms-ble-crash-str) " " (str-from-n (ix s 4)))
+        } "- - - - - -")
 })
 
 (defun bms-ble-crash-str () {
