@@ -236,15 +236,16 @@
     in-horn-freq in-horn-amps in-horn-duration in-auto-blinker-enabled in-auto-blinker-angle in-auto-blinker-invert
 ) {
 
+    ; Enabling or disabling a feature needs a reboot. Apply and save all other
+    ; settings of this request first, then reboot at the end, so nothing that
+    ; was changed together with the enable flag gets lost.
+    (var reboot-now nil)
     (if (or (!= (to-i in-led-enabled) (to-i (get-config 'led-enabled)))  (!= (to-i in-pubmote-enabled) (to-i (get-config 'pubmote-enabled))) (!= (to-i in-bms-enabled) (to-i (get-config 'bms-enabled)))){
         (set-config 'led-enabled (to-i in-led-enabled))
         (set-config 'bms-enabled (to-i in-bms-enabled))
         (set-config 'pubmote-enabled (to-i in-pubmote-enabled))
-        (save-config)
-        (send-msg "Rebooting")
-        (reboot)
+        (setq reboot-now t)
     })
-    (var reboot-now nil)
     (if (>= led-context-id 0) {
         (let ((start-time (systime)) (timeout-val 2000000)) ; 2 sec timeout
 
@@ -367,6 +368,8 @@
             }{
                 (set-config 'led-front-pin (to-i in-led-front-pin))
             })
+        }{
+            (set-config 'led-front-pin (to-i in-led-front-pin))
         })
 
         (if (and (> in-led-rear-strip-type 0) (>= in-led-rear-pin 0)) {
@@ -375,6 +378,8 @@
             }{
                 (set-config 'led-rear-pin (to-i in-led-rear-pin))
             })
+        }{
+            (set-config 'led-rear-pin (to-i in-led-rear-pin))
         })
 
         (if (and (> in-led-status-strip-type 0) (>= in-led-status-pin 0)) {
@@ -383,6 +388,8 @@
             }{
                 (set-config 'led-status-pin (to-i in-led-status-pin))
             })
+        }{
+            (set-config 'led-status-pin (to-i in-led-status-pin))
         })
 
         (if (and (> in-led-button-strip-type 0) (>= in-led-button-pin 0)) {
@@ -391,6 +398,8 @@
             }{
                 (set-config 'led-button-pin (to-i in-led-button-pin))
             })
+        }{
+            (set-config 'led-button-pin (to-i in-led-button-pin))
         })
 
         (if (and (> in-led-footpad-strip-type 0) (>= in-led-footpad-pin 0)) {
@@ -399,6 +408,8 @@
             }{
                 (set-config 'led-footpad-pin (to-i in-led-footpad-pin))
             })
+        }{
+            (set-config 'led-footpad-pin (to-i in-led-footpad-pin))
         })
 
         (if (and (= in-led-front-strip-type 7) (>= in-led-front-highbeam-pin 0)) {
@@ -407,6 +418,8 @@
             }{
                 (set-config 'led-front-highbeam-pin (to-i in-led-front-highbeam-pin))
             })
+        }{
+            (set-config 'led-front-highbeam-pin (to-i in-led-front-highbeam-pin))
         })
 
         (if (and (= in-led-rear-strip-type 7) (>= in-led-rear-highbeam-pin 0)) {
@@ -415,28 +428,40 @@
             }{
                 (set-config 'led-rear-highbeam-pin (to-i in-led-rear-highbeam-pin))
             })
+        }{
+            (set-config 'led-rear-highbeam-pin (to-i in-led-rear-highbeam-pin))
         })
+    }{
+        (set-config 'led-front-pin (to-i in-led-front-pin))
+        (set-config 'led-rear-pin (to-i in-led-rear-pin))
+        (set-config 'led-status-pin (to-i in-led-status-pin))
+        (set-config 'led-button-pin (to-i in-led-button-pin))
+        (set-config 'led-footpad-pin (to-i in-led-footpad-pin))
+        (set-config 'led-front-highbeam-pin (to-i in-led-front-highbeam-pin))
+        (set-config 'led-rear-highbeam-pin (to-i in-led-rear-highbeam-pin))
     })
 
     (if (not reboot-now) (setq led-context-id (if (= (get-config 'led-enabled) 1) (spawn led-loop) -1)))
     (if (not reboot-now) (setq bms-context-id (if (= (get-config 'bms-enabled) 1) (spawn bms-loop) -1)))
 
-    (if (= in-humidity-enabled 1) {
+    (if (and (not reboot-now) (= in-humidity-enabled 1)) {
         (if (= humidity-context-id -1) (setq humidity-context-id (spawn humidity-loop)))
     })
 
-    (if (= in-pubmote-enabled 1) {
+    (if (and (not reboot-now) (= in-pubmote-enabled 1)) {
         (if (= pubmote-context-id -1) (setq pubmote-context-id (spawn pubmote-loop)))
     })
 
-    (if (= in-log-enabled 1) {
-        (if (= log-context-id -1) {
-            (setq log-context-id (spawn log-loop))
+    (if (not reboot-now) {
+        (if (= in-log-enabled 1) {
+            (if (= log-context-id -1) {
+                (setq log-context-id (spawn log-loop))
+            }{
+                (start-log (get-config 'log-append-gnss) (get-config 'log-rate))
+            })
         }{
-            (start-log (get-config 'log-append-gnss) (get-config 'log-rate))
+            (stop-log)
         })
-    }{
-        (stop-log)
     })
 
     (set-config 'horn-freq (to-i in-horn-freq))
