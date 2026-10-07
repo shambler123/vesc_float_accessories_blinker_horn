@@ -8,9 +8,9 @@
 (def bms-ble-scan-running nil)
 
 (defun bms-ble-type-int (ty)
-    (cond ((eq ty 'jbd) 1) ((eq ty 'daly) 2) ((eq ty 'lipower) 3) ((eq ty 'litech) 4) ((eq ty 'jk) 5) ((eq ty 'ant) 6) (t 0)))
+    (cond ((eq ty 'jbd) 1) ((eq ty 'daly) 2) ((eq ty 'lipower) 3) ((eq ty 'litech) 4) ((eq ty 'jk) 5) ((eq ty 'ant) 6) ((eq ty 'ssbms) 7) (t 0)))
 (defun bms-ble-int-type (i)
-    (cond ((= i 1) 'jbd) ((= i 2) 'daly) ((= i 3) 'lipower) ((= i 4) 'litech) ((= i 5) 'jk) ((= i 6) 'ant) (t 'auto)))
+    (cond ((= i 1) 'jbd) ((= i 2) 'daly) ((= i 3) 'lipower) ((= i 4) 'litech) ((= i 5) 'jk) ((= i 6) 'ant) ((= i 7) 'ssbms) (t 'auto)))
 
 ; "A5:C2:37:17:C7:1A" -> (0xA5C237 0x17C71A)
 (defun bms-ble-mac-to-ints (mac) {

@@ -1981,7 +1981,7 @@ Item {
                         visible: (bmsEnabled.checked || bmsBleEnabled.checked) && tabBar2.currentIndex === 2
 
                         GroupBox {
-                            title: "Bluetooth BMS (JBD / Daly / JK / ANT / LiPower / LiTech)"
+                            title: "Bluetooth BMS (JBD / Daly / JK / ANT / Stoked Stock / LiPower / LiTech)"
                             Layout.fillWidth: true
 
                             ColumnLayout {
@@ -1994,7 +1994,7 @@ Item {
                                     color: bmsBleAvailable ? Utility.getAppHexColor("lightText") : "orange"
                                     text: bmsBleAvailable ?
                                           "The VESC Express connects to the BMS over BLE while VESC Tool stays connected. Saved BMS: " +
-                                          (bmsBleMac !== "-" ? bmsBleMac + " (" + ["auto", "jbd", "daly", "lipower", "litech", "jk", "ant"][bmsBleSavedType] + ")" : "none") :
+                                          (bmsBleMac !== "-" ? bmsBleMac + " (" + ["auto", "jbd", "daly", "lipower", "litech", "jk", "ant", "ssbms"][bmsBleSavedType] + ")" : "none") :
                                           "This firmware has no bms-ble extensions. Flash the vesc_express_ble firmware to use a Bluetooth BMS."
                                 }
 
@@ -2044,7 +2044,7 @@ Item {
                                 ComboBox {
                                     id: bmsBleTypeOverride
                                     Layout.fillWidth: true
-                                    model: ["auto", "jbd", "daly", "lipower", "litech", "jk", "ant"]
+                                    model: ["auto", "jbd", "daly", "lipower", "litech", "jk", "ant", "ssbms"]
                                 }
 
                                 Text {

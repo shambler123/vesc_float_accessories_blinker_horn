@@ -1,6 +1,6 @@
 ; float-accessories.lisp
 ; Smart LED Control, Tilt Remote and stock OW BMS bridge for VESC Express
-; Version 3.5.32
+; Version 3.5.33
 ; 5/24/2025
 ; Copyright 2024 Syler Clayton <syler.clayton@gmail.com>
 ; Special Thanks: Benjamin Vedder, surfdado, NuRxG, Siwoz, lolwheel (OWIE), ThankTheMaker (rESCue), 4_fools & marcos (avaspark), auden_builds (pubmote)
