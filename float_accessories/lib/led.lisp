@@ -1010,6 +1010,7 @@
         (led-track-direction)
         (led-track-mall-grab)
         (led-track-activity)
+        (blinker-tick)
 
         ; Decide, then drive the PWM highbeam, both outside the have-segs gate:
         ; led-decide only reads telemetry and writes loop-state globals (with no
@@ -1031,6 +1032,9 @@
                 (led-draw-aux)
             }
                 (led-draw-all-off))
+            ; Turn signals outrank everything on the front and rear, lights
+            ; on or off: a signal that goes with the lights is no signal.
+            (led-draw-blinker)
             (setq dbg-led-t3 (secs-since 0))
 
             ; Everything above only recorded intent. This is the one point in

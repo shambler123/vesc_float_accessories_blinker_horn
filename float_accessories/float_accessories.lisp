@@ -20,6 +20,8 @@
 (read-eval-program settings)
 (import "lib/can.lisp" 'can)
 (read-eval-program can)
+(import "lib/blinker.lisp" 'blinker)
+(read-eval-program blinker)
 (import "lib/logger.lisp" 'logger)
 (read-eval-program logger)
 (import "lib/gnss.lisp" 'gnss)

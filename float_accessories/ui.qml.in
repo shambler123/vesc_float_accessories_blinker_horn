@@ -629,6 +629,9 @@ Item {
             gnssUartNum.value = mCustomConf.getParamInt("gnss_uart_num")
             gnssRateMs.value = mCustomConf.getParamInt("gnss_rate_ms")
             gnssBaud.value = mCustomConf.getParamInt("gnss_baud")
+            autoBlinkerEnabled.checked = mCustomConf.getParamBool("auto_blinker_enabled")
+            autoBlinkerAngle.value = Math.round(mCustomConf.getParamDouble("auto_blinker_angle"))
+            blinkerInvert.checked = mCustomConf.getParamBool("blinker_invert")
 
             // The preset itself is not stored - recognize it from the
             // loaded values, falling back to Custom.
@@ -2246,6 +2249,52 @@ Item {
                     }
 
                     GroupBox {
+                        title: "Blinker"
+                        Layout.fillWidth: true
+                        visible: ledEnabled.checked
+                        background: Loader { sourceComponent: cardBg }
+                        label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Blinker" }
+                        topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 6
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                color: fieldLabelStyle.color
+                                font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                text: "Amber turn signal on the front and rear strips, 1.5 Hz. It turns itself off after four flashes; pressing the active side again stops it early."
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Button {
+                                    text: "◀ Left"
+                                    Layout.fillWidth: true
+                                    enabled: !statusTimeout
+                                    onClicked: sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(toggle-blinker (blinker-l))")
+                                }
+                                Button {
+                                    text: "Off"
+                                    Layout.fillWidth: true
+                                    enabled: !statusTimeout
+                                    onClicked: sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(set-blinker 0)")
+                                }
+                                Button {
+                                    text: "Right ▶"
+                                    Layout.fillWidth: true
+                                    enabled: !statusTimeout
+                                    onClicked: sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(toggle-blinker (blinker-r))")
+                                }
+                            }
+                        }
+                    }
+
+                    GroupBox {
                         title: "Logging Control"
                         Layout.fillWidth: true
                         visible: logEnabled.checked
@@ -2694,6 +2743,59 @@ Item {
                                         value: 20
                                         editable: true
                                     }
+                                }
+                            }
+                        }
+
+                        GroupBox {
+                            title: "Blinker Config"
+                            Layout.fillWidth: true
+                            background: Loader { sourceComponent: cardBg }
+                            label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Blinker Config" }
+                            topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 10
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                    text: "The blinker is driven from the Control tab, the remote (see the Pubmote config) and, when enabled here, from the lean angle while riding."
+                                }
+
+                                CheckBox {
+                                    id: autoBlinkerEnabled
+                                    text: "Auto blinker from the lean angle"
+                                    checked: false
+                                }
+
+                                ColumnLayout {
+                                    spacing: cardStyle.labelSpacing
+                                    Layout.fillWidth: true
+                                    visible: autoBlinkerEnabled.checked
+                                    Text {
+                                        color: fieldLabelStyle.color
+                                        font.pixelSize: fieldLabelStyle.pixelSize
+                                        font.bold: fieldLabelStyle.bold
+                                        text: "Lean angle (°) - normal turns are 5 to 15°, released below 80 % of it"
+                                    }
+                                    SpinBox {
+                                        id: autoBlinkerAngle
+                                        from: 3
+                                        to: 30
+                                        value: 10
+                                        stepSize: 1
+                                        editable: true
+                                    }
+                                }
+
+                                CheckBox {
+                                    id: blinkerInvert
+                                    text: "Swap left and right (all blinker sources)"
+                                    checked: false
                                 }
                             }
                         }
@@ -5114,6 +5216,9 @@ Item {
         mCustomConf.updateParamInt("gnss_uart_num", gnssUartNum.value)
         mCustomConf.updateParamInt("gnss_rate_ms", gnssRateMs.value)
         mCustomConf.updateParamInt("gnss_baud", gnssBaud.value)
+        mCustomConf.updateParamBool("auto_blinker_enabled", autoBlinkerEnabled.checked)
+        mCustomConf.updateParamDouble("auto_blinker_angle", autoBlinkerAngle.value.toFixed(1))
+        mCustomConf.updateParamBool("blinker_invert", blinkerInvert.checked)
     }
 
     // Property to track enabled tabs

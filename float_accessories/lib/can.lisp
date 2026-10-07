@@ -130,6 +130,8 @@
                 (if (and refloat-humidity (get-config 'humidity-enabled)) (float-cmd can-id (list (assoc float-cmds 'COMMAND_HUMIDITY) (to-byte hum))))
             })
 
+            (blinker-auto-update)
+
             (if (or (>= bms-can-id 0) (< (secs-since bms-last-activity-time) 1)){
                 (var prev-charging-state bms-is-charging)
                 (setq bms-is-charging (and (> (get-bms-val 'bms-v-charge) 10.0) (> (abs(get-bms-val 'bms-i-in-ic)) 0.1)))

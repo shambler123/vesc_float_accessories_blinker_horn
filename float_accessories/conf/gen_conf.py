@@ -191,6 +191,16 @@ PARAMS = [
     ("led_button_pin", "Button Pin", (I, -1, 48, ""), -1,
      "GPIO of the button LED data line."),
 
+    # --- Blinker ----------------------------------------------------------
+    ("blinker_invert", "Swap Blinker Sides", (B,), 0,
+     "Swap left and right for every blinker source (remote, auto blinker,"
+     " VESC Tool)."),
+    ("auto_blinker_enabled", "Auto Blinker", (B,), 0,
+     "Start a blinker from the lean (roll) angle while riding."),
+    ("auto_blinker_angle", "Auto Blinker Angle", (F, 3.0, 30.0, 1.0, " deg"), 10.0,
+     "Roll angle that starts the auto blinker. It is released below 80 % of"
+     " it."),
+
     # --- Pubmote ---------------------------------------------------------
     ("pubmote_loop_delay", "Pubmote Loop Rate", (I, 1, 100, " Hz"), 30,
      "Telemetry rate to the remote."),
@@ -310,6 +320,8 @@ GROUPS = [
                      "led_footpad_num", "led_footpad_type",
                      "led_footpad_reversed"]),
         ("Button", ["led_button_timing", "led_button_pin"]),
+        ("Blinker", ["auto_blinker_enabled", "auto_blinker_angle",
+                     "blinker_invert"]),
         ("Pubmote", ["pubmote_loop_delay",
                     "::sep::Paired Remote", "pubmote_remote_mac_a",
                     "pubmote_remote_mac_b", "pubmote_secret_code"]),
