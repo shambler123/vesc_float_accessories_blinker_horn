@@ -24,6 +24,8 @@
 (read-eval-program blinker)
 (import "lib/horn.lisp" 'horn)
 (read-eval-program horn)
+(import "lib/remote-buttons.lisp" 'remote-buttons)
+(read-eval-program remote-buttons)
 (import "lib/logger.lisp" 'logger)
 (read-eval-program logger)
 (import "lib/gnss.lisp" 'gnss)
@@ -202,6 +204,7 @@
             (setq pubmote-last-bt-c bt-c)
             (setq pubmote-last-bt-z bt-z)
             (setq pubmote-last-is-rev is-rev)
+            (remote-buttons-update jsx bt-z)
             ; Held back while the horn plays: set-remote-state would cut the
             ; tone short.
             (if (and (>= (get-config 'can-id) 0) (not (horn-active))) {

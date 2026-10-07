@@ -26,5 +26,6 @@ My Blog: <a href='https://sylerclayton.com'>https://sylerclayton.com</a>
   <li>Diagnostics card on the Config tab: per-area verbose logging plus a one-shot system report. The flag is held in RAM only, so it never persists and resets on reboot.</li>
   <li>Blinker: amber turn signal (1.5 Hz) on the front and rear strips, from the Control tab or the auto blinker (lean angle while riding, with hysteresis). Turns itself off after four flashes. Swap left/right in the Blinker config.</li>
   <li>Horn: a tone played by the motor (foc-play-tone on the ESC), frequency, amplitude and duration in the Settings tab, Beep button on the Control tab. Remote input is held back while it plays.</li>
+  <li>Pubmote buttons: X click = left blinker, double click = right blinker, triple click = horn; Z held 0.8 s = horn. The Input Preview shows the blinker, pending clicks and horn count.</li>
 </ul>
 

@@ -340,6 +340,9 @@ Item {
     property bool pubmoteInputBtC: false
     property bool pubmoteInputBtZ: false
     property bool pubmoteInputRev: false
+    property int pubmoteInputBlinker: 0
+    property int pubmoteInputClicks: 0
+    property int pubmoteInputHorns: 0
 
     // Live GNSS preview state (fed by the (gnss-state) poll)
     property bool gnssPreviewFix: false
@@ -3880,6 +3883,25 @@ Item {
                                     }
                                 }
 
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize
+                                    font.bold: fieldLabelStyle.bold
+                                    text: "Button mapping"
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                    text: "X button: 1 click = left blinker, 2 clicks = right blinker (a click on the active side stops it), 3 clicks = horn. Clicks count until the button has been up for 0.4 s.\n" +
+                                          "Z button: hold 0.8 s = horn.\n" +
+                                          "The blinker sides can be swapped in the Lights config, the horn tone is on the Settings tab."
+                                }
+
                             }
                         }
 
@@ -3975,6 +3997,14 @@ Item {
                                     Text {
                                         text: "Y: " + pubmoteInputJsy.toFixed(3) + "    X: " + pubmoteInputJsx.toFixed(3)
                                         color: Utility.getAppHexColor("lightText")
+                                        Layout.alignment: Qt.AlignHCenter
+                                    }
+
+                                    Text {
+                                        text: "Blinker: " + (pubmoteInputBlinker === 0 ? "off" : (pubmoteInputBlinker === 1 ? "◀ left" : "right ▶"))
+                                              + "    Clicks: " + pubmoteInputClicks
+                                              + "    Horn: " + pubmoteInputHorns + "×"
+                                        color: pubmoteInputBlinker !== 0 ? "#FF9900" : Utility.getAppHexColor("lightText")
                                         Layout.alignment: Qt.AlignHCenter
                                     }
 
@@ -5639,6 +5669,11 @@ Item {
                 pubmoteInputBtC = pmConn ? !!Number(tokens[4]) : false;
                 pubmoteInputBtZ = pmConn ? !!Number(tokens[5]) : false;
                 pubmoteInputRev = pmConn ? !!Number(tokens[6]) : false;
+                if (tokens.length > 9) {
+                    pubmoteInputBlinker = Number(tokens[7]);
+                    pubmoteInputClicks = Number(tokens[8]);
+                    pubmoteInputHorns = Number(tokens[9]);
+                }
             } else if (str.startsWith("gnss-state")) {
                 var gs = str.split(" ")
                 var gFix = !!Number(gs[1])

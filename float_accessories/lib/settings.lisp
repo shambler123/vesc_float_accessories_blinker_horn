@@ -303,6 +303,11 @@
         (str-from-n pubmote-last-bt-c "%d")
         (str-from-n pubmote-last-bt-z "%d")
         (str-from-n pubmote-last-is-rev "%d")
+        ; What the buttons did: blinker state, clicks still being counted,
+        ; horns fired since boot.
+        (str-from-n blinker-state "%d")
+        (str-from-n rb-click-count "%d")
+        (str-from-n horn-fire-count "%d")
     ) " "))
 })
 
