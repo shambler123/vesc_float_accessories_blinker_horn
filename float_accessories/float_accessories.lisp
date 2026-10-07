@@ -44,6 +44,8 @@
 (read-eval-program bms-vars)
 (import "lib/bms.lisp" 'bms)
 (read-eval-program bms)
+(import "lib/bms_ble.lisp" 'bms-ble)
+(read-eval-program bms-ble)
 (import "pubmote/pubmote-consts.lisp" 'pubmote-consts)
 (import "pubmote/pubmote-vars.lisp" 'pubmote-vars)
 (import "pubmote/pubmote-utils.lisp" 'pubmote-utils)
@@ -243,6 +245,8 @@
     (if (= (get-config 'bms-enabled) 1){
         (setq bms-context-id (spawn-with-restart "bms-loop" nil bms-loop))
     })
+    ; Bluetooth BMS: the firmware keeps the link, there is no loop to spawn
+    (bms-ble-init)
 
     (if (= (get-config 'humidity-enabled) 1) (setq humidity-context-id (spawn-with-restart "humidity-loop" nil humidity-loop)))
 

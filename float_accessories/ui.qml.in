@@ -271,6 +271,46 @@ Item {
     property int loggerRunning: 0
     property string pubmoteVersionStr: "Unknown"
 
+    // Bluetooth BMS, reported by the bms-ble-* extensions of the
+    // vesc_express_ble firmware through the "bms-ble" status line.
+    property bool bmsBleAvailable: false
+    property string bmsBleState: "disabled"
+    property string bmsBleType: "auto"
+    property real bmsBleVoltage: 0
+    property real bmsBleCurrent: 0
+    property int bmsBleSoc: 0
+    property int bmsBleCells: 0
+    property real bmsBleCellMin: 0
+    property real bmsBleCellMax: 0
+    property int bmsBleSoh: 100
+    property string bmsBleMac: "-"
+    property int bmsBleSavedType: 0
+    property bool bmsBleScanning: false
+    property string bmsBleDiag: ""
+    property string bmsBleCrash: ""
+    readonly property var bmsBleTypeNames: ["auto", "jbd", "daly", "lipower", "litech", "jk", "ant", "ssbms"]
+
+    ListModel {
+        id: bmsBleScanModel
+    }
+
+    Timer {
+        id: bmsBleScanTimeout
+        interval: 15000
+        repeat: false
+        onTriggered: bmsBleScanning = false
+    }
+
+    // Use / Forget store the config on the board from lisp; the page
+    // re-reads it a moment later so a following Save Config cannot write
+    // the old device back.
+    Timer {
+        id: bmsBleConfigRefresh
+        interval: 600
+        repeat: false
+        onTriggered: mCommands.customConfigGet(faConfigIndex, false)
+    }
+
     // ---- Status summary -------------------------------------------------
     // One source of truth for the header pill and the popover it opens.
     // Every line reports a severity: 0 ok, 1 warning, 2 error, and -1 for
@@ -303,6 +343,12 @@ Item {
 
         readonly property int bmsSeverity: (!bmsEnabled.checked || statusTimeout) ? -1
             : (bmsConnected ? 0 : 2)
+
+        // No firmware support or a saved device that is not connected is an
+        // error; nothing saved yet is only a warning.
+        readonly property int bmsBleSeverity: (!bmsBleEnabled.checked || statusTimeout) ? -1
+            : (!bmsBleAvailable ? 2
+            : (bmsBleState === "connected" ? 0 : (bmsBleMac === "-" ? 1 : 2)))
 
         readonly property int bmsHumSeverity: (!bmsEnabled.checked || !humidityEnabled.checked
             || statusTimeout || bmsHum <= 0) ? -1
@@ -638,6 +684,9 @@ Item {
             hornFreq.value = mCustomConf.getParamInt("horn_freq")
             hornAmplitudeLoader.item.value = mCustomConf.getParamDouble("horn_amplitude")
             hornDurationLoader.item.value = mCustomConf.getParamDouble("horn_duration")
+            bmsBleEnabled.checked = mCustomConf.getParamBool("bms_ble_enabled")
+            bmsBleSavedType = mCustomConf.getParamEnum("bms_ble_type")
+            bmsBleMac = bmsBleMacString(mCustomConf.getParamInt("bms_ble_mac_a"), mCustomConf.getParamInt("bms_ble_mac_b"))
 
             // The preset itself is not stored - recognize it from the
             // loaded values, falling back to Custom.
@@ -1482,7 +1531,7 @@ Item {
         // The horn card needs no feature switched on, so the Control tab
         // always has something to show.
         property bool hasControlContent: true
-        property int enabledFeatureCount: ledEnabled.checked + pubmoteEnabled.checked + bmsEnabled.checked + logEnabled.checked + gnssEnabled.checked
+        property int enabledFeatureCount: ledEnabled.checked + pubmoteEnabled.checked + ((bmsEnabled.checked || bmsBleEnabled.checked) ? 1 : 0) + logEnabled.checked + gnssEnabled.checked
 
         // Control (0) and Config (1) each hide themselves when they have
         // nothing to show, so keep the selection off a hidden tab. Settings
@@ -1686,6 +1735,15 @@ Item {
                         }
 
                         Text {
+                            id: bmsBleStatus
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            color: statusSummary.severityColor(statusSummary.bmsBleSeverity)
+                            text: bmsBleStatusText()
+                            visible: bmsBleEnabled.checked
+                        }
+
+                        Text {
                             id: bmsHumStatus
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
@@ -1779,7 +1837,7 @@ Item {
             }
             MenuItem {
                 text: qsTr("BMS")
-                visible: bmsEnabled.checked
+                visible: bmsEnabled.checked || bmsBleEnabled.checked
                 height: visible ? implicitHeight : 0
                 onTriggered: {
                     tabBar2.currentIndex = 2
@@ -1920,7 +1978,7 @@ Item {
                     } else {
                         if (ledEnabled.checked) tabBar2.currentIndex = 0
                         else if (pubmoteEnabled.checked) tabBar2.currentIndex = 1
-                        else if (bmsEnabled.checked) tabBar2.currentIndex = 2
+                        else if (bmsEnabled.checked || bmsBleEnabled.checked) tabBar2.currentIndex = 2
                         else if (logEnabled.checked) tabBar2.currentIndex = 3
                         else if (gnssEnabled.checked) tabBar2.currentIndex = 4
                     }
@@ -1967,6 +2025,11 @@ Item {
             }
 
             Connections {
+                target: bmsBleEnabled
+                function onCheckedChanged() { updateEnabledIndices() }
+            }
+
+            Connections {
                 target: logEnabled
                 function onCheckedChanged() { updateEnabledIndices() }
             }
@@ -1993,9 +2056,9 @@ Item {
 
             TabButton {
                 text: qsTr("BMS")
-                enabled: bmsEnabled.checked
-                visible: bmsEnabled.checked
-                width: bmsEnabled.checked ? implicitWidth : 0
+                enabled: bmsEnabled.checked || bmsBleEnabled.checked
+                visible: bmsEnabled.checked || bmsBleEnabled.checked
+                width: (bmsEnabled.checked || bmsBleEnabled.checked) ? implicitWidth : 0
             }
             TabButton {
                 text: qsTr("Logging")
@@ -2394,6 +2457,36 @@ Item {
                                 onCheckedChanged: {
                                     handleDebouncedChange()
                                 }
+                            }
+                        }
+                    }
+
+                    GroupBox {
+                        title: "Bluetooth BMS"
+                        Layout.fillWidth: true
+                        visible: bmsBleEnabled.checked
+                        background: Loader { sourceComponent: cardBg }
+                        label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Bluetooth BMS" }
+                        topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 6
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                color: statusSummary.severityColor(statusSummary.bmsBleSeverity)
+                                text: bmsBleStatusText()
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                visible: bmsBleDiag.length > 0
+                                color: fieldLabelStyle.color
+                                font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                text: "Firmware: " + bmsBleDiag + (bmsBleCrash.length > 0 ? "\nLast crash: " + bmsBleCrash.split("|").join(" ") : "")
                             }
                         }
                     }
@@ -4054,10 +4147,132 @@ Item {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 20
-                        visible: bmsEnabled.checked && tabBar2.currentIndex === 2
+                        visible: (bmsEnabled.checked || bmsBleEnabled.checked) && tabBar2.currentIndex === 2
+
+                        GroupBox {
+                            title: "Bluetooth BMS"
+                            Layout.fillWidth: true
+                            visible: bmsBleEnabled.checked
+                            background: Loader { sourceComponent: cardBg }
+                            label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Bluetooth BMS" }
+                            topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 10
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: bmsBleAvailable ? fieldLabelStyle.color : "orange"
+                                    font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                    text: bmsBleAvailable
+                                        ? "The Express connects to the BMS over BLE while VESC Tool stays connected (JBD, Daly, LiPower, LiTech, JK, ANT, Stoked Stock). Picking a device saves it at once; no Save Config needed."
+                                        : "This firmware has no bms-ble extensions. Flash the vesc_express_ble firmware (github.com/shambler123/vesc_express_ble) to use a Bluetooth BMS."
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize
+                                    font.bold: fieldLabelStyle.bold
+                                    text: "Saved device: " + (bmsBleMac !== "-" ? bmsBleMac + " (" + bmsBleTypeNames[bmsBleSavedType] + ")" : "none")
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Button {
+                                        text: bmsBleScanning ? "Scanning..." : "Scan (6 s)"
+                                        enabled: bmsBleAvailable && !bmsBleScanning && !statusTimeout
+                                        onClicked: {
+                                            bmsBleScanModel.clear()
+                                            bmsBleScanning = true
+                                            bmsBleScanTimeout.restart()
+                                            sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-do-scan 6)")
+                                        }
+                                    }
+
+                                    BusyIndicator {
+                                        running: bmsBleScanning
+                                        visible: bmsBleScanning
+                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: 30
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Button {
+                                        text: "Forget"
+                                        enabled: bmsBleAvailable && bmsBleMac !== "-" && !statusTimeout
+                                        onClicked: {
+                                            sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-forget)")
+                                            bmsBleConfigRefresh.restart()
+                                        }
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    spacing: cardStyle.labelSpacing
+                                    Layout.fillWidth: true
+                                    Text {
+                                        color: fieldLabelStyle.color
+                                        font.pixelSize: fieldLabelStyle.pixelSize
+                                        font.bold: fieldLabelStyle.bold
+                                        text: "Protocol for Use (auto = as detected from the device)"
+                                    }
+                                    ComboBox {
+                                        id: bmsBleTypeOverride
+                                        Layout.fillWidth: true
+                                        model: bmsBleTypeNames
+                                    }
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    visible: !bmsBleScanning && bmsBleScanModel.count === 0
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                    text: "No devices listed. Scan while the BMS is awake and no phone app is connected to it."
+                                }
+
+                                Repeater {
+                                    model: bmsBleScanModel
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 10
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            wrapMode: Text.WordWrap
+                                            color: model.btype === "unknown" ? Qt.rgba(1, 1, 1, 0.45) : Utility.getAppHexColor("lightText")
+                                            text: (model.name.length > 0 ? model.name : "(no name)") + "\n" + model.mac + "   " + model.rssi + " dBm   " + model.btype
+                                        }
+
+                                        Button {
+                                            text: "Use"
+                                            onClicked: {
+                                                var t = bmsBleTypeOverride.currentText
+                                                if (t === "auto" && model.btype !== "unknown") {
+                                                    t = model.btype
+                                                }
+                                                sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(bms-ble-select \"" + model.mac + "\" '" + t + ")")
+                                                bmsBleConfigRefresh.restart()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         GroupBox {
                             title: "BMS Config"
                             Layout.fillWidth: true
+                            visible: bmsEnabled.checked
                             background: Loader { sourceComponent: cardBg }
                             label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "BMS Config" }
                             topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
@@ -4637,6 +4852,13 @@ Item {
                             CheckBox {
                                 id: bmsEnabled
                                 text: "BMS Enabled"
+                                checked: false
+                                enabled: true
+                            }
+
+                            CheckBox {
+                                id: bmsBleEnabled
+                                text: "Bluetooth BMS Enabled (vesc_express_ble firmware)"
                                 checked: false
                                 enabled: true
                             }
@@ -5368,6 +5590,9 @@ Item {
         mCustomConf.updateParamInt("horn_freq", hornFreq.value)
         mCustomConf.updateParamDouble("horn_amplitude", parseFloat(hornAmplitudeLoader.item.value).toFixed(1))
         mCustomConf.updateParamDouble("horn_duration", parseFloat(hornDurationLoader.item.value).toFixed(1))
+        // The saved device (bms_ble_mac_a/b, bms_ble_type) is written by
+        // the board itself when a device is picked, and re-read here.
+        mCustomConf.updateParamBool("bms_ble_enabled", bmsBleEnabled.checked)
     }
 
     // Property to track enabled tabs
@@ -5388,7 +5613,7 @@ Item {
         const newIndices = []
         if (ledEnabled.checked) newIndices.push(0)
         if (pubmoteEnabled.checked) newIndices.push(1)
-        if (bmsEnabled.checked) newIndices.push(2)
+        if (bmsEnabled.checked || bmsBleEnabled.checked) newIndices.push(2)
         if (logEnabled.checked) newIndices.push(3)
         if (gnssEnabled.checked) newIndices.push(4)
         enabledIndices = newIndices
@@ -5538,6 +5763,26 @@ Item {
         return result;
     }
 
+    // Saved Bluetooth BMS address from its two config ints (3 bytes each),
+    // "-" when none is saved.
+    function bmsBleMacString(a, b) {
+        if (a < 0 || b < 0) return "-"
+        function h(v) { return ("0" + (v & 0xFF).toString(16).toUpperCase()).slice(-2) }
+        return h(a >> 16) + ":" + h(a >> 8) + ":" + h(a) + ":" + h(b >> 16) + ":" + h(b >> 8) + ":" + h(b)
+    }
+
+    // One line for the status popover and the Control tab card. QML tracks
+    // the properties read in here, so the bindings follow them.
+    function bmsBleStatusText() {
+        if (statusTimeout) return "BLE BMS: Unknown"
+        if (!bmsBleAvailable) return "BLE BMS: firmware without BLE BMS support"
+        if (bmsBleState === "connected") {
+            return "BLE BMS (" + bmsBleType + "): " + bmsBleVoltage.toFixed(2) + " V  " + bmsBleCurrent.toFixed(2) + " A  "
+                + bmsBleSoc + "%  " + bmsBleCells + "s  " + bmsBleCellMin.toFixed(3) + "-" + bmsBleCellMax.toFixed(3) + " V  SOH " + bmsBleSoh + "%"
+        }
+        return "BLE BMS: " + bmsBleState + (bmsBleMac !== "-" ? " (" + bmsBleMac + ")" : " (no device saved)")
+    }
+
     function unpackUint32ToBytes(packedValue) {
         return [
             (packedValue >> 24) & 0xFF,
@@ -5673,6 +5918,42 @@ Item {
                     pubmoteInputBlinker = Number(tokens[7]);
                     pubmoteInputClicks = Number(tokens[8]);
                     pubmoteInputHorns = Number(tokens[9]);
+                }
+            } else if (str.startsWith("bms-ble-scan")) {
+                bmsBleScanModel.clear()
+                var entries = str.substring(13).split("|")
+                for (var i = 0; i < entries.length; i++) {
+                    var f = entries[i].split(";")
+                    if (f.length >= 4) {
+                        bmsBleScanModel.append({name: f[0], mac: f[1], rssi: Number(f[2]), btype: f[3]})
+                    }
+                }
+                bmsBleScanning = false
+                bmsBleScanTimeout.stop()
+            } else if (str.startsWith("bms-ble ")) {
+                var bb = str.split(" ")
+                bmsBleAvailable = Number(bb[1]) === 1
+                if (bmsBleAvailable && bb.length >= 15) {
+                    bmsBleState = bb[2]
+                    bmsBleType = bb[3]
+                    bmsBleVoltage = parseFloat(bb[4])
+                    bmsBleCurrent = parseFloat(bb[5])
+                    bmsBleSoc = Number(bb[6])
+                    bmsBleCells = Number(bb[7])
+                    bmsBleCellMin = parseFloat(bb[8])
+                    bmsBleCellMax = parseFloat(bb[9])
+                    bmsBleSoh = Number(bb[11])
+                    bmsBleMac = bb[12]
+                    bmsBleSavedType = Number(bb[13])
+                    // 15..20: reset reason, stage before the reset, current
+                    // stage, free heap, crash record, minimum free heap
+                    bmsBleDiag = bb.length >= 19
+                        ? ("reset " + bb[15] + "  stage " + bb[16] + " > " + bb[17] + "  heap " + bb[18] + (bb.length >= 21 ? " (min " + bb[20] + ")" : ""))
+                        : ""
+                    if (bb.length >= 20 && bb[19] !== "-" && bb[19] !== bmsBleCrash) {
+                        bmsBleCrash = bb[19]
+                        VescIf.emitStatusMessage("Firmware crash record (reset " + bb[15] + ", stage " + bb[16] + "): " + bb[19].split("|").join(" "), false)
+                    }
                 }
             } else if (str.startsWith("gnss-state")) {
                 var gs = str.split(" ")

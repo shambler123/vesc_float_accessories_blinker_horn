@@ -56,6 +56,9 @@
         (apply-battery-config (get-config 'soc-type) (get-config 'cell-type))
     })
 
+    ; Bluetooth BMS: connect or drop per config, nothing to restart
+    (bms-ble-apply)
+
     ; LED loop: reinit in place when running, spawn/stop on enable change
     (if (and (>= led-context-id 0) (!= (get-config 'led-enabled) 1)) {
         (dbg DBG-CFG "cfg stop led")
@@ -288,6 +291,8 @@
         (str-from-n (gnss-hdop) "%.1f")
         (str-from-n (gnss-speed) "%.2f")
     ) " "))
+
+    (bms-ble-status)
 
     (if (= (is-pubmote-connected) 1) {
         (send-data (str-merge "pubmote-info " (to-str (ix pubmote-version 0)) "." (to-str (ix pubmote-version 1)) "." (to-str (ix pubmote-version 2))))

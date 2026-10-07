@@ -46,6 +46,10 @@ PARAMS = [
      "Enable telemetry logging."),
     ("humidity_enabled", "Humidity Sensor Enabled", (B,), 0,
      "Enable the Si7021/AHT20 humidity sensor loop."),
+    ("bms_ble_enabled", "Bluetooth BMS Enabled", (B,), 0,
+     "Connect to a Bluetooth BMS (JBD, Daly, LiPower, LiTech, JK, ANT,"
+     " Stoked Stock) through the bms-ble extensions of the vesc_express_ble"
+     " firmware. Pick the device on the BMS config page."),
     ("gnss_enabled", "GNSS Enabled", (B,), 0,
      "Enable the GNSS receiver (u-blox or NMEA). Feeds the gnss-*"
      " extensions, the SD log position (Log GNSS) and the CAN GNSS"
@@ -261,6 +265,18 @@ PARAMS = [
     ("bms_counter_d", "BMS Counter D", (I, -2147483648, 2147483647, ""), -1,
      "Stored BMS counter. Set from the QML page."),
 
+    # --- Bluetooth BMS -----------------------------------------------------
+    ("bms_ble_type", "Bluetooth BMS Protocol",
+     (E, ["Auto", "JBD", "Daly", "LiPower", "LiTech", "JK", "ANT",
+          "Stoked Stock"]), 0,
+     "Protocol of the saved Bluetooth BMS. Auto detects it from the device."),
+    ("bms_ble_mac_a", "Bluetooth BMS MAC A", (I, -2147483648, 2147483647, ""), -1,
+     "Saved Bluetooth BMS address (upper 3 bytes), -1 = none. Set from the"
+     " BMS config page."),
+    ("bms_ble_mac_b", "Bluetooth BMS MAC B", (I, -2147483648, 2147483647, ""), -1,
+     "Saved Bluetooth BMS address (lower 3 bytes), -1 = none. Set from the"
+     " BMS config page."),
+
     # --- Logging / humidity ----------------------------------------------
     ("log_rate", "Log Rate", (F, 0.1, 50.0, 0.1, " Hz"), 2.0,
      "Telemetry log sample rate."),
@@ -295,7 +311,8 @@ PARAMS = [
 
 GROUPS = [
     ("General", [
-        ("Features", ["led_enabled", "bms_enabled", "pubmote_enabled",
+        ("Features", ["led_enabled", "bms_enabled", "bms_ble_enabled",
+                     "pubmote_enabled",
                      "log_enabled", "humidity_enabled", "gnss_enabled",
                      "::sep::CAN Bus", "can_id", "can_loop_delay"]),
         ("LEDs", ["led_on", "led_highbeam_on", "led_mode", "led_mode_idle",
@@ -342,6 +359,7 @@ GROUPS = [
                  "::sep::Pairing", "bms_key_a", "bms_key_b", "bms_key_c", "bms_key_d",
                  "bms_counter_a", "bms_counter_b", "bms_counter_c",
                  "bms_counter_d"]),
+        ("Bluetooth BMS", ["bms_ble_type", "bms_ble_mac_a", "bms_ble_mac_b"]),
         ("Logging", ["log_rate", "log_append_gnss"]),
         ("Humidity", ["humidity_sda_pin", "humidity_slc_pin"]),
         ("GNSS", ["gnss_type", "gnss_rx_pin", "gnss_tx_pin",
