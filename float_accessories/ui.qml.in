@@ -632,6 +632,9 @@ Item {
             autoBlinkerEnabled.checked = mCustomConf.getParamBool("auto_blinker_enabled")
             autoBlinkerAngle.value = Math.round(mCustomConf.getParamDouble("auto_blinker_angle"))
             blinkerInvert.checked = mCustomConf.getParamBool("blinker_invert")
+            hornFreq.value = mCustomConf.getParamInt("horn_freq")
+            hornAmplitudeLoader.item.value = mCustomConf.getParamDouble("horn_amplitude")
+            hornDurationLoader.item.value = mCustomConf.getParamDouble("horn_duration")
 
             // The preset itself is not stored - recognize it from the
             // loaded values, falling back to Custom.
@@ -1473,7 +1476,9 @@ Item {
         // Status used to live on the Control tab and gave it its name when no
         // feature was on. It is in the header pill now, so with every feature
         // off that tab holds nothing at all and hides itself.
-        property bool hasControlContent: ledEnabled.checked || bmsEnabled.checked || logEnabled.checked
+        // The horn card needs no feature switched on, so the Control tab
+        // always has something to show.
+        property bool hasControlContent: true
         property int enabledFeatureCount: ledEnabled.checked + pubmoteEnabled.checked + bmsEnabled.checked + logEnabled.checked + gnssEnabled.checked
 
         // Control (0) and Config (1) each hide themselves when they have
@@ -2290,6 +2295,34 @@ Item {
                                     enabled: !statusTimeout
                                     onClicked: sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(toggle-blinker (blinker-r))")
                                 }
+                            }
+                        }
+                    }
+
+                    GroupBox {
+                        title: "Horn"
+                        Layout.fillWidth: true
+                        background: Loader { sourceComponent: cardBg }
+                        label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Horn" }
+                        topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 6
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                color: fieldLabelStyle.color
+                                font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                text: "Plays the tone configured on the Settings tab through the motor. Needs the float package on the CAN bus."
+                            }
+
+                            Button {
+                                text: "Beep"
+                                Layout.fillWidth: true
+                                enabled: !statusTimeout && floatPackageConnected
+                                onClicked: sendCode(String.fromCharCode(102) + String.fromCharCode(1) + "(trigger-beep)")
                             }
                         }
                     }
@@ -4691,6 +4724,89 @@ Item {
                     }
 
                     GroupBox {
+                        title: "Horn"
+                        Layout.fillWidth: true
+                        background: Loader { sourceComponent: cardBg }
+                        label: Loader { sourceComponent: cardTitleLabel; onLoaded: item.title = "Horn" }
+                        topPadding: cardStyle.topPadding; leftPadding: cardStyle.sidePadding; rightPadding: cardStyle.sidePadding; bottomPadding: cardStyle.bottomPadding
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 10
+
+                            Text {
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                color: fieldLabelStyle.color
+                                font.pixelSize: fieldLabelStyle.pixelSize - 2
+                                text: "The tone the Beep button on the Control tab plays through the motor (foc-play-tone on the ESC). A high amplitude for a long time heats the motor - start low."
+                            }
+
+                            ColumnLayout {
+                                spacing: cardStyle.labelSpacing
+                                Text {
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize
+                                    font.bold: fieldLabelStyle.bold
+                                    text: "Frequency (Hz)"
+                                }
+                                SpinBox {
+                                    id: hornFreq
+                                    from: 50
+                                    to: 2000
+                                    value: 180
+                                    stepSize: 10
+                                    editable: true
+                                }
+                            }
+
+                            ColumnLayout {
+                                spacing: cardStyle.labelSpacing
+                                Layout.fillWidth: true
+                                Text {
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize
+                                    font.bold: fieldLabelStyle.bold
+                                    text: "Amplitude (V): " + (hornAmplitudeLoader.item ? hornAmplitudeLoader.item.value.toFixed(1) : "")
+                                }
+                                Loader {
+                                    id: hornAmplitudeLoader
+                                    Layout.fillWidth: true
+                                    sourceComponent: customValueSlider
+                                    onLoaded: {
+                                        item.from = 0.5
+                                        item.to = 10.0
+                                        item.stepSize = 0.5
+                                        item.value = 4.0
+                                    }
+                                }
+                            }
+
+                            ColumnLayout {
+                                spacing: cardStyle.labelSpacing
+                                Layout.fillWidth: true
+                                Text {
+                                    color: fieldLabelStyle.color
+                                    font.pixelSize: fieldLabelStyle.pixelSize
+                                    font.bold: fieldLabelStyle.bold
+                                    text: "Duration (s): " + (hornDurationLoader.item ? hornDurationLoader.item.value.toFixed(1) : "")
+                                }
+                                Loader {
+                                    id: hornDurationLoader
+                                    Layout.fillWidth: true
+                                    sourceComponent: customValueSlider
+                                    onLoaded: {
+                                        item.from = 0.1
+                                        item.to = 3.0
+                                        item.stepSize = 0.1
+                                        item.value = 0.6
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    GroupBox {
                         title: "Humidity Sensor"
                         Layout.fillWidth: true
                         visible: humidityEnabled.checked
@@ -5219,6 +5335,9 @@ Item {
         mCustomConf.updateParamBool("auto_blinker_enabled", autoBlinkerEnabled.checked)
         mCustomConf.updateParamDouble("auto_blinker_angle", autoBlinkerAngle.value.toFixed(1))
         mCustomConf.updateParamBool("blinker_invert", blinkerInvert.checked)
+        mCustomConf.updateParamInt("horn_freq", hornFreq.value)
+        mCustomConf.updateParamDouble("horn_amplitude", parseFloat(hornAmplitudeLoader.item.value).toFixed(1))
+        mCustomConf.updateParamDouble("horn_duration", parseFloat(hornDurationLoader.item.value).toFixed(1))
     }
 
     // Property to track enabled tabs

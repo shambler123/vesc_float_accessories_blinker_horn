@@ -22,6 +22,8 @@
 (read-eval-program can)
 (import "lib/blinker.lisp" 'blinker)
 (read-eval-program blinker)
+(import "lib/horn.lisp" 'horn)
+(read-eval-program horn)
 (import "lib/logger.lisp" 'logger)
 (read-eval-program logger)
 (import "lib/gnss.lisp" 'gnss)
@@ -200,7 +202,9 @@
             (setq pubmote-last-bt-c bt-c)
             (setq pubmote-last-bt-z bt-z)
             (setq pubmote-last-is-rev is-rev)
-            (if (>= (get-config 'can-id) 0) {
+            ; Held back while the horn plays: set-remote-state would cut the
+            ; tone short.
+            (if (and (>= (get-config 'can-id) 0) (not (horn-active))) {
                 (can-cmd (get-config 'can-id) (str-replace (to-str (list jsy jsx bt-c bt-z is-rev)) "(" "(set-remote-state "))
             })
         }))

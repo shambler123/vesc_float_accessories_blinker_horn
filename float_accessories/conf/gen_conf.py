@@ -201,6 +201,14 @@ PARAMS = [
      "Roll angle that starts the auto blinker. It is released below 80 % of"
      " it."),
 
+    # --- Horn -------------------------------------------------------------
+    ("horn_freq", "Horn Frequency", (I, 50, 2000, " Hz"), 180,
+     "Tone frequency, played by the motor through foc-play-tone on the ESC."),
+    ("horn_amplitude", "Horn Amplitude", (F, 0.5, 10.0, 0.5, " V"), 4.0,
+     "Voltage amplitude of the tone (the foc-play-tone voltage argument)."),
+    ("horn_duration", "Horn Duration", (F, 0.1, 3.0, 0.1, " s"), 0.6,
+     "How long the tone plays."),
+
     # --- Pubmote ---------------------------------------------------------
     ("pubmote_loop_delay", "Pubmote Loop Rate", (I, 1, 100, " Hz"), 30,
      "Telemetry rate to the remote."),
@@ -322,6 +330,7 @@ GROUPS = [
         ("Button", ["led_button_timing", "led_button_pin"]),
         ("Blinker", ["auto_blinker_enabled", "auto_blinker_angle",
                      "blinker_invert"]),
+        ("Horn", ["horn_freq", "horn_amplitude", "horn_duration"]),
         ("Pubmote", ["pubmote_loop_delay",
                     "::sep::Paired Remote", "pubmote_remote_mac_a",
                     "pubmote_remote_mac_b", "pubmote_secret_code"]),
